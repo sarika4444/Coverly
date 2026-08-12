@@ -1,0 +1,42 @@
+### 1. Create Policy
+POST http://localhost:8080/api/policies
+Content-Type: application/json
+
+{
+  "policyNumber": "POL-1001",
+  "customerName": "Rahul Sharma",
+  "policyType": "MOTOR",
+  "insuredValue": 1200000,
+  "premium": 32000,
+  "status": "ACTIVE"
+}
+
+
+### 2. Create Claim
+POST http://localhost:8080/api/claims
+Content-Type: application/json
+
+{
+  "claimNumber": "CLM-5001",
+  "policyNumber": "POL-1001",
+  "customerName": "Rahul Sharma",
+  "incidentType": "ACCIDENT",
+  "claimAmount": 850000,
+  "status": "SUBMITTED"
+}
+
+
+### 3. Evaluate Claim Risk
+GET http://localhost:8080/api/claims/1/risk
+
+### 4. Create Billing
+POST http://localhost:8080/api/billing
+Content-Type: application/json
+{
+  "billingId": "BILL-1001",
+  "policyNumber": "POL-1001",
+  "amountPaid": 10000
+}
+
+### 5. Get All Billing
+GET http://localhost:8080/api/billing

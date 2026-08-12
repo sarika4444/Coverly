@@ -1,0 +1,8 @@
+POST http://localhost:8080/api/billing
+Content-Type: application/json
+
+{
+  "billingId": "BILL-1001",
+  "policyNumber": "POL-1001",
+  "amountPaid": 10000
+}
