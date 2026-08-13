@@ -1,91 +1,63 @@
 package com.coverly.billing;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
+
 public class Billing {
 
     private Long id;
     private String billingId;
+
+    @NotBlank
     private String policyNumber;
 
-    private Double premium;
-    private Double amountPaid;
-    private Double amountDue;
+    @NotBlank
+    private String customerNumber;
 
+    private double premium;
+
+    @PositiveOrZero
+    private double amountPaid;
+
+    private double amountDue;
     private String paymentStatus;
 
-    public Billing() {
-    }
+    public Billing() {}
 
-    public Billing(
-            Long id,
-            String billingId,
-            String policyNumber,
-            Double premium,
-            Double amountPaid,
-            Double amountDue,
-            String paymentStatus) {
-
+    public Billing(Long id, String billingId, String policyNumber, String customerNumber,
+                    double premium, double amountPaid, double amountDue,
+                    String paymentStatus) {
         this.id = id;
         this.billingId = billingId;
         this.policyNumber = policyNumber;
+        this.customerNumber = customerNumber;
         this.premium = premium;
         this.amountPaid = amountPaid;
         this.amountDue = amountDue;
         this.paymentStatus = paymentStatus;
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getBillingId() { return billingId; }
+    public void setBillingId(String billingId) { this.billingId = billingId; }
 
-    public String getBillingId() {
-        return billingId;
-    }
+    public String getPolicyNumber() { return policyNumber; }
+    public void setPolicyNumber(String policyNumber) { this.policyNumber = policyNumber; }
 
-    public void setBillingId(String billingId) {
-        this.billingId = billingId;
-    }
+    public String getCustomerNumber() { return customerNumber; }
+    public void setCustomerNumber(String customerNumber) { this.customerNumber = customerNumber; }
 
-    public String getPolicyNumber() {
-        return policyNumber;
-    }
+    public double getPremium() { return premium; }
+    public void setPremium(double premium) { this.premium = premium; }
 
-    public void setPolicyNumber(String policyNumber) {
-        this.policyNumber = policyNumber;
-    }
+    public double getAmountPaid() { return amountPaid; }
+    public void setAmountPaid(double amountPaid) { this.amountPaid = amountPaid; }
 
-    public Double getPremium() {
-        return premium;
-    }
+    public double getAmountDue() { return amountDue; }
+    public void setAmountDue(double amountDue) { this.amountDue = amountDue; }
 
-    public void setPremium(Double premium) {
-        this.premium = premium;
-    }
-
-    public Double getAmountPaid() {
-        return amountPaid;
-    }
-
-    public void setAmountPaid(Double amountPaid) {
-        this.amountPaid = amountPaid;
-    }
-
-    public Double getAmountDue() {
-        return amountDue;
-    }
-
-    public void setAmountDue(Double amountDue) {
-        this.amountDue = amountDue;
-    }
-
-    public String getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public void setPaymentStatus(String paymentStatus) {
-        this.paymentStatus = paymentStatus;
-    }
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
 }

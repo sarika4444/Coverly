@@ -1,137 +1,101 @@
 package com.coverly.billing;
 
+import com.coverly.audit.AuditService;
+import com.coverly.common.BadRequestException;
+import com.coverly.common.NotFoundException;
 import com.coverly.policy.Policy;
 import com.coverly.policy.PolicyService;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class BillingService {
 
-    // Temporary in-memory storage
-    // We will replace this with a database later.
     private final List<Billing> billings = new ArrayList<>();
+    private final AtomicLong sequence = new AtomicLong();
 
     private final PolicyService policyService;
+    private final AuditService auditService;
 
-    // Constructor injection
-    public BillingService(PolicyService policyService) {
+    public BillingService(PolicyService policyService, AuditService auditService) {
         this.policyService = policyService;
+        this.auditService = auditService;
     }
 
-    // --------------------------------------------------
-    // CREATE BILLING
-    // --------------------------------------------------
     public Billing createBilling(Billing billing) {
+        Policy policy = policyService.getAllPolicies().stream()
+                .filter(p -> p.getPolicyNumber().equalsIgnoreCase(billing.getPolicyNumber()))
+                .findFirst()
+                .orElseThrow(() -> new BadRequestException(
+                        "Policy not found: " + billing.getPolicyNumber()));
 
-        // Find the policy associated with this billing
-        Policy policy = findPolicy(billing.getPolicyNumber());
-
-        // If policy doesn't exist, don't create the billing
-        if (policy == null) {
-            throw new RuntimeException(
-                    "Policy not found: " + billing.getPolicyNumber()
-            );
-        }
-
-        // Generate billing ID
-        billing.setId((long) (billings.size() + 1));
-
-        // --------------------------------------------------
-        // GET PREMIUM FROM POLICY
-        // --------------------------------------------------
-
+        billing.setId(sequence.incrementAndGet());
+        billing.setBillingId("INV-" + String.format("%05d", billing.getId()));
+        billing.setCustomerNumber(policy.getCustomerNumber());
         billing.setPremium(policy.getPremium());
 
-        // --------------------------------------------------
-        // HANDLE AMOUNT PAID
-        // --------------------------------------------------
+        double paid = Math.max(0, billing.getAmountPaid());
+        billing.setAmountPaid(Math.min(paid, policy.getPremium()));
 
-        Double amountPaid = billing.getAmountPaid();
+        double due = Math.max(0, policy.getPremium() - billing.getAmountPaid());
+        billing.setAmountDue(due);
 
-        // If amountPaid was not provided, treat it as 0
-        if (amountPaid == null) {
-            amountPaid = 0.0;
-            billing.setAmountPaid(amountPaid);
-        }
-
-        // --------------------------------------------------
-        // CALCULATE AMOUNT DUE
-        // --------------------------------------------------
-
-        double amountDue =
-                policy.getPremium() - amountPaid;
-
-        // Don't allow negative amount due
-        if (amountDue < 0) {
-            amountDue = 0;
-        }
-
-        billing.setAmountDue(amountDue);
-
-        // --------------------------------------------------
-        // DETERMINE PAYMENT STATUS
-        // --------------------------------------------------
-
-        if (amountDue == 0) {
-
+        if (due == 0) {
             billing.setPaymentStatus("PAID");
-
-        } else if (amountPaid > 0) {
-
+        } else if (billing.getAmountPaid() > 0) {
             billing.setPaymentStatus("PARTIALLY_PAID");
-
         } else {
-
-            billing.setPaymentStatus("UNPAID");
+            billing.setPaymentStatus("OVERDUE");
         }
-
-        // --------------------------------------------------
-        // SAVE BILLING
-        // --------------------------------------------------
 
         billings.add(billing);
 
+        auditService.record("BILLING_CREATED", billing.getBillingId(),
+                "Invoice created for " + billing.getPolicyNumber());
+
         return billing;
     }
-
-    // --------------------------------------------------
-    // GET ALL BILLINGS
-    // --------------------------------------------------
 
     public List<Billing> getAllBillings() {
         return billings;
     }
 
-    // --------------------------------------------------
-    // GET BILLING BY ID
-    // --------------------------------------------------
-
     public Billing getBillingById(Long id) {
-
         return billings.stream()
-                .filter(billing ->
-                        billing.getId().equals(id)
-                )
+                .filter(b -> b.getId().equals(id))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new NotFoundException("Billing record not found: " + id));
     }
 
-    // --------------------------------------------------
-    // FIND POLICY
-    // --------------------------------------------------
+    public List<Billing> findByCustomerNumber(String customerNumber) {
+        return billings.stream()
+                .filter(b -> b.getCustomerNumber().equalsIgnoreCase(customerNumber))
+                .toList();
+    }
 
-    private Policy findPolicy(String policyNumber) {
+    public Billing makePayment(Long id, double amount) {
+        if (amount <= 0) {
+            throw new BadRequestException("Payment amount must be greater than zero");
+        }
 
-        return policyService.getAllPolicies()
-                .stream()
-                .filter(policy ->
-                        policy.getPolicyNumber()
-                                .equalsIgnoreCase(policyNumber)
-                )
-                .findFirst()
-                .orElse(null);
+        Billing billing = getBillingById(id);
+        double newPaid = Math.min(billing.getPremium(), billing.getAmountPaid() + amount);
+
+        billing.setAmountPaid(newPaid);
+        billing.setAmountDue(Math.max(0, billing.getPremium() - newPaid));
+
+        if (billing.getAmountDue() == 0) {
+            billing.setPaymentStatus("PAID");
+        } else {
+            billing.setPaymentStatus("PARTIALLY_PAID");
+        }
+
+        auditService.record("PAYMENT_RECEIVED", billing.getBillingId(),
+                "Payment received: " + amount);
+
+        return billing;
     }
 }

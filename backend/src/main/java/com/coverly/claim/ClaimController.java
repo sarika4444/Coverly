@@ -1,6 +1,7 @@
 package com.coverly.claim;
-import com.coverly.sentinel.RiskEngine;
-import com.coverly.sentinel.RiskResult;
+
+import com.coverly.sentinel.SentinelService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -10,32 +11,40 @@ import java.util.List;
 public class ClaimController {
 
     private final ClaimService claimService;
+    private final SentinelService sentinelService;
 
-    public ClaimController(ClaimService claimService) {
+    public ClaimController(ClaimService claimService,
+                           SentinelService sentinelService) {
         this.claimService = claimService;
+        this.sentinelService = sentinelService;
     }
 
-    // Create a new claim
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Claim createClaim(@RequestBody Claim claim) {
-        return claimService.createClaim(claim);
+        return claimService.create(claim, sentinelService);
     }
 
-    // Get all claims
     @GetMapping
     public List<Claim> getAllClaims() {
-        return claimService.getAllClaims();
+        return claimService.findAll();
     }
 
-    // Get a claim by ID
     @GetMapping("/{id}")
-    public Claim getClaimById(@PathVariable Long id) {
-        return claimService.getClaimById(id);
+    public Claim getClaim(@PathVariable Long id) {
+        return claimService.findById(id);
     }
 
-    // Evaluate claim risk using Coverly Sentinel
-    @GetMapping("/{id}/risk")
-    public RiskResult evaluateClaimRisk(@PathVariable Long id) {
-        return claimService.evaluateClaim(id);
+    @GetMapping("/customer/{customerNumber}")
+    public List<Claim> getClaimsByCustomer(
+            @PathVariable String customerNumber) {
+        return claimService.findByCustomerNumber(customerNumber);
+    }
+
+    @PatchMapping("/{id}/status")
+    public Claim updateStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        return claimService.updateStatus(id, status);
     }
 }

@@ -1,42 +1,45 @@
-### 1. Create Policy
-POST http://localhost:8080/api/policies
-Content-Type: application/json
+### Dashboard
+GET http://localhost:8080/api/dashboard/summary
 
-{
-  "policyNumber": "POL-1001",
-  "customerName": "Rahul Sharma",
-  "policyType": "MOTOR",
-  "insuredValue": 1200000,
-  "premium": 32000,
-  "status": "ACTIVE"
-}
+### Customers
+GET http://localhost:8080/api/customers
+
+### Customer 360
+GET http://localhost:8080/api/customers/1/360
+
+### Policies
+GET http://localhost:8080/api/policies
+
+### Claims
+GET http://localhost:8080/api/claims
 
 
-### 2. Create Claim
+### Sentinel claim assessment
+GET http://localhost:8080/api/sentinel/claim?customerNumber=CUS-00001&policyNumber=POL-00001&claimAmount=800000
+### Sentinel customer assessment
+GET http://localhost:8080/api/customers/CUS-00001/360
+
+### Billing
+GET http://localhost:8080/api/billing
+
+### Audit
+GET http://localhost:8080/api/audit
+
+### timeline
+GET http://localhost:8080/api/customers/CUS-00001/timeline
+
+### Create high-value claim
 POST http://localhost:8080/api/claims
 Content-Type: application/json
 
 {
-  "claimNumber": "CLM-5001",
-  "policyNumber": "POL-1001",
+  "policyNumber": "POL-00001",
+  "customerNumber": "CUS-00001",
   "customerName": "Rahul Sharma",
   "incidentType": "ACCIDENT",
-  "claimAmount": 850000,
-  "status": "SUBMITTED"
+  "claimAmount": 800000,
+  "status": "SUBMITTED",
+  "riskScore": 0,
+  "fraudScore": 0,
+  "decision": "PENDING"
 }
-
-
-### 3. Evaluate Claim Risk
-GET http://localhost:8080/api/claims/1/risk
-
-### 4. Create Billing
-POST http://localhost:8080/api/billing
-Content-Type: application/json
-{
-  "billingId": "BILL-1001",
-  "policyNumber": "POL-1001",
-  "amountPaid": 10000
-}
-
-### 5. Get All Billing
-GET http://localhost:8080/api/billing
